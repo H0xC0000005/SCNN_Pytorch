@@ -1,19 +1,24 @@
-# Code copied from pytorch-tutorial https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/04-utils/tensorboard/logger.py 
+"""
+Code copied from pytorch-tutorial
+https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/04-utils/tensorboard/logger.py
+"""
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-import scipy.misc 
-try:
-    from StringIO import StringIO  # Python 2.7
-except ImportError:
-    from io import BytesIO         # Python 3.x
+
+
+from io import BytesIO         # Python 3.x
 
 
 class TensorBoard(object):
+    """
+    origin branch is also old, this is version from newly updated experimental one
+    experimentally proved to work 2022.11.30
+    """
     
     def __init__(self, log_dir):
         """Create a summary writer logging to log_dir."""
-        self.writer = tf.summary.FileWriter(log_dir)
+        self.writer = tf.summary.create_file_writer(log_dir)
 
     def scalar_summary(self, tag, value, step):
         """Log a scalar variable."""
@@ -26,10 +31,7 @@ class TensorBoard(object):
         img_summaries = []
         for i, img in enumerate(images):
             # Write the image to a string
-            try:
-                s = StringIO()
-            except:
-                s = BytesIO()
+            s = BytesIO()
             # scipy.misc.toimage(img).save(s, format="png")
             Image.fromarray(img).save(s, format='png')
 
