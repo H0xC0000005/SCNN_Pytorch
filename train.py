@@ -10,8 +10,10 @@ from tqdm import tqdm
 
 from config import *
 import dataset
-from model import SCNN
-from utils.tensorboard import TensorBoard
+from SCNN import SCNN
+# deprecated due to old tensorboard API
+# and I'm not able to fix it
+# from utils.tensorboard import TensorBoard
 from utils.transforms import *
 from utils.lr_scheduler import PolyLR
 
@@ -35,7 +37,7 @@ with open(os.path.join(exp_dir, "cfg.json")) as f:
 resize_shape = tuple(exp_cfg['dataset']['resize_shape'])
 
 device = torch.device(exp_cfg['device'])
-tensorboard = TensorBoard(exp_dir)
+# tensorboard = TensorBoard(exp_dir)
 
 # ------------ train data ------------
 # # CULane mean, std
@@ -99,13 +101,13 @@ def train(epoch):
         progressbar.update(1)
 
         lr = optimizer.param_groups[0]['lr']
-        tensorboard.scalar_summary(exp_name + "/train_loss", train_loss, iter_idx)
-        tensorboard.scalar_summary(exp_name + "/train_loss_seg", train_loss_seg, iter_idx)
-        tensorboard.scalar_summary(exp_name + "/train_loss_exist", train_loss_exist, iter_idx)
-        tensorboard.scalar_summary(exp_name + "/learning_rate", lr, iter_idx)
+        # tensorboard.scalar_summary(exp_name + "/train_loss", train_loss, iter_idx)
+        # tensorboard.scalar_summary(exp_name + "/train_loss_seg", train_loss_seg, iter_idx)
+        # tensorboard.scalar_summary(exp_name + "/train_loss_exist", train_loss_exist, iter_idx)
+        # tensorboard.scalar_summary(exp_name + "/learning_rate", lr, iter_idx)
 
     progressbar.close()
-    tensorboard.writer.flush()
+    # tensorboard.writer.flush()
 
     if epoch % 1 == 0:
         save_dict = {

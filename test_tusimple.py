@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 import dataset
 from config import *
-from model import SCNN
+from SCNN import SCNN
 from utils.prob2lines import getLane
 from utils.transforms import *
 

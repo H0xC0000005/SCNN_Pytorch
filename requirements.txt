@@ -1,4 +1,9 @@
-numpy
-opencv-python
+numpy~=1.23.5
+opencv-python~=4.6.0.66
 torch>=0.4.1
-torchvision
+torchvision~=0.14.0
+Pillow~=9.3.0
+logger~=1.4
+tensorflow~=2.11.0
+scipy~=1.9.3
+tqdm~=4.64.1
