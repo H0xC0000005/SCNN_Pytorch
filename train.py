@@ -4,19 +4,23 @@ import os
 import shutil
 import time
 
+import cv2
+import numpy as np
+import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from config import *
+from config import Dataset_Path
 import dataset
 from SCNN import SCNN
 
 # deprecated due to old tensorboard API
 # using new experimental version
 from utils.tensorboard_logger import Logger
-from utils.transforms import *
+
 from utils.lr_scheduler import PolyLR
+import utils.transforms.transforms as transforms
 
 
 def parse_args():
@@ -40,7 +44,7 @@ with open(os.path.join(exp_dir, "cfg.json")) as f:
 resize_shape = tuple(exp_cfg['dataset']['resize_shape'])
 
 device = torch.device(exp_cfg['device'])
-tensorboard = Logger(exp_dir)
+tensorboard_logger = Logger(exp_dir)
 
 # ------------ train data ------------
 # # CULane mean, std
@@ -49,9 +53,13 @@ tensorboard = Logger(exp_dir)
 # Imagenet mean, std
 mean = (0.485, 0.456, 0.406)
 std = (0.229, 0.224, 0.225)
-transform_train = Compose(Resize(resize_shape), Rotation(2), ToTensor(),
-                          Normalize(mean=mean, std=std))
+transform_train = transforms.Compose(transforms.Resize(resize_shape),
+                                     transforms.Rotation(2),
+                                     transforms.ToTensor(),
+                                     transforms.Normalize(mean=mean, std=std))
 dataset_name = exp_cfg['dataset'].pop('dataset_name')
+
+# dataset folder has __init__ module and specified dataset is extracted there
 Dataset_Type = getattr(dataset, dataset_name)
 train_dataset = Dataset_Type(Dataset_Path[dataset_name], "train", transform_train)
 train_loader = DataLoader(train_dataset,
@@ -61,9 +69,10 @@ train_loader = DataLoader(train_dataset,
                           num_workers=8)
 
 # ------------ val data ------------
-transform_val_img = Resize(resize_shape)
-transform_val_x = Compose(ToTensor(), Normalize(mean=mean, std=std))
-transform_val = Compose(transform_val_img, transform_val_x)
+transform_val_img = transforms.Resize(resize_shape)
+transform_val_x = transforms.Compose(transforms.ToTensor(),
+                                     transforms.Normalize(mean=mean, std=std))
+transform_val = transforms.Compose(transform_val_img, transform_val_x)
 val_dataset = Dataset_Type(Dataset_Path[dataset_name], "val", transform_val)
 val_loader = DataLoader(val_dataset, batch_size=8, collate_fn=val_dataset.collate, num_workers=4)
 
@@ -78,6 +87,11 @@ best_val_loss = 1e6
 
 
 def train(epoch):
+    """
+    just for a single epoch training, it's ok
+    yet my personal style is to combine epoch inside train()
+
+    """
     print("Train Epoch: {}".format(epoch))
     net.train()
     # train_loss = 0
@@ -108,13 +122,13 @@ def train(epoch):
         progressbar.update(1)
 
         lr = optimizer.param_groups[0]['lr']
-        tensorboard.scalar_summary(exp_name + "/train_loss", train_loss, iter_idx)
-        tensorboard.scalar_summary(exp_name + "/train_loss_seg", train_loss_seg, iter_idx)
-        tensorboard.scalar_summary(exp_name + "/train_loss_exist", train_loss_exist, iter_idx)
-        tensorboard.scalar_summary(exp_name + "/learning_rate", lr, iter_idx)
+        tensorboard_logger.scalar_summary(exp_name + "/train_loss", train_loss, iter_idx)
+        tensorboard_logger.scalar_summary(exp_name + "/train_loss_seg", train_loss_seg, iter_idx)
+        tensorboard_logger.scalar_summary(exp_name + "/train_loss_exist", train_loss_exist, iter_idx)
+        tensorboard_logger.scalar_summary(exp_name + "/learning_rate", lr, iter_idx)
 
     progressbar.close()
-    tensorboard.writer.flush()
+    tensorboard_logger.writer.flush()
 
     if epoch % 1 == 0:
         save_dict = {
@@ -180,7 +194,7 @@ def val(epoch):
                                 cv2.FONT_HERSHEY_SIMPLEX, 1.1, (255, 255, 255), 2)
                     origin_imgs.append(img)
                     origin_imgs.append(lane_img)
-                tensorboard.image_summary("img_{}".format(batch_idx), origin_imgs, epoch)
+                tensorboard_logger.image_summary("img_{}".format(batch_idx), origin_imgs, epoch)
 
             val_loss += loss.item()
             val_loss_seg += loss_seg.item()
@@ -191,10 +205,10 @@ def val(epoch):
 
     progressbar.close()
     iter_idx = (epoch + 1) * len(train_loader)  # keep align with training process iter_idx
-    tensorboard.scalar_summary("val_loss", val_loss, iter_idx)
-    tensorboard.scalar_summary("val_loss_seg", val_loss_seg, iter_idx)
-    tensorboard.scalar_summary("val_loss_exist", val_loss_exist, iter_idx)
-    tensorboard.writer.flush()
+    tensorboard_logger.scalar_summary("val_loss", val_loss, iter_idx)
+    tensorboard_logger.scalar_summary("val_loss_seg", val_loss_seg, iter_idx)
+    tensorboard_logger.scalar_summary("val_loss_exist", val_loss_exist, iter_idx)
+    tensorboard_logger.writer.flush()
 
     print("------------------------\n")
     if val_loss < best_val_loss:

@@ -9,6 +9,9 @@ from torch.utils.data import Dataset
 class CULane(Dataset):
     def __init__(self, path, image_set, transforms=None):
         super(CULane, self).__init__()
+        self.img_list = None
+        self.segLabel_list = None
+        self.exist_list = None
         assert image_set in ('train', 'val', 'test'), "image_set is not valid!"
         self.data_dir_path = path
         self.image_set = image_set
@@ -18,7 +21,6 @@ class CULane(Dataset):
             self.createIndex()
         else:
             self.createIndex_test()
-
 
     def createIndex(self):
         listfile = os.path.join(self.data_dir_path, "list", "{}_gt.txt".format(self.image_set))
@@ -30,7 +32,8 @@ class CULane(Dataset):
             for line in f:
                 line = line.strip()
                 l = line.split(" ")
-                self.img_list.append(os.path.join(self.data_dir_path, l[0][1:]))   # l[0][1:]  get rid of the first '/' so as for os.path.join
+                self.img_list.append(os.path.join(self.data_dir_path, l[0][1:]))  # l[0][1:]  get rid of the first
+                # '/' so as for os.path.join
                 self.segLabel_list.append(os.path.join(self.data_dir_path, l[1][1:]))
                 self.exist_list.append([int(x) for x in l[2:]])
 
@@ -41,7 +44,8 @@ class CULane(Dataset):
         with open(listfile) as f:
             for line in f:
                 line = line.strip()
-                self.img_list.append(os.path.join(self.data_dir_path, line[1:]))  # l[0][1:]  get rid of the first '/' so as for os.path.join
+                self.img_list.append(os.path.join(self.data_dir_path, line[
+                                                                      1:]))  # l[0][1:]  get rid of the first '/' so as for os.path.join
 
     def __getitem__(self, idx):
         img = cv2.imread(self.img_list[idx])
@@ -82,8 +86,8 @@ class CULane(Dataset):
             exist = [b['exist'] for b in batch]
 
         samples = {'img': img,
-                  'segLabel': segLabel,
-                  'exist': exist,
-                  'img_name': [x['img_name'] for x in batch]}
+                   'segLabel': segLabel,
+                   'exist': exist,
+                   'img_name': [x['img_name'] for x in batch]}
 
         return samples

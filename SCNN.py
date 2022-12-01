@@ -56,6 +56,8 @@ class SCNN(nn.Module):
             loss_exist = self.bce_loss(exist_pred, exist_gt)
             loss = loss_seg * self.scale_seg + loss_exist * self.scale_exist
         else:
+            print(f"warning: in SCNN forward() seg_gt and exist_gt have at least 1 None so "
+                  f"all losses are set to 0")
             loss_seg = torch.tensor(0, dtype=img.dtype, device=img.device)
             loss_exist = torch.tensor(0, dtype=img.dtype, device=img.device)
             loss = torch.tensor(0, dtype=img.dtype, device=img.device)
@@ -64,7 +66,7 @@ class SCNN(nn.Module):
 
     def message_passing_forward(self, x):
         """
-        convolve through 4 dimensions
+        convolution through 4 dimensions
         """
         Vertical = [True, True, False, False]
         Reverse = [False, True, False, True]
