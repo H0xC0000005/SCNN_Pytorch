@@ -27,11 +27,17 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp_dir", type=str, default="./experiments/exp0")
     parser.add_argument("--resume", "-r", action="store_true")
+    parser.add_argument("--multigpu", type=str, default="yes")
     args = parser.parse_args()
     return args
-
-
+    
 args = parse_args()
+
+assert args.multigpu in ("yes", "no"), f"your option for argument --multigpu ({args.multigpu}) is neither yes or no"
+
+# work-arounds
+torch.backends.cudnn.enabled = False
+# torch.backends.cudnn.enabled = True
 
 # ------------ config ------------
 exp_dir = args.exp_dir
@@ -44,6 +50,8 @@ with open(os.path.join(exp_dir, "cfg.json")) as f:
 resize_shape = tuple(exp_cfg['dataset']['resize_shape'])
 
 device = torch.device(exp_cfg['device'])
+
+print(f">>>>>>>> current device: {device} ")
 tensorboard_logger = Logger(exp_dir)
 
 # ------------ train data ------------
@@ -79,7 +87,18 @@ val_loader = DataLoader(val_dataset, batch_size=8, collate_fn=val_dataset.collat
 # ------------ preparation ------------
 net = SCNN(resize_shape, pretrained=True)
 net = net.to(device)
-net = torch.nn.DataParallel(net)
+
+if device.type.lower() != "cpu":
+    print(f"device is not cpu, parallizing across existing GPUs:")
+    if args.multigpu == "yes":
+        net = torch.nn.DataParallel(net)
+        print(f"model's device ID: {net.device_ids}")
+    else:
+        print(f"not parallizing across multiple devices i.e. not calling nn.DataParallel()")
+else:
+    print(f"device is cpu, not parallizing, this model shouldn't have device ids")
+
+
 
 optimizer = optim.SGD(net.parameters(), **exp_cfg['optim'])
 lr_scheduler = PolyLR(optimizer, 0.9, **exp_cfg['lr_scheduler'])
