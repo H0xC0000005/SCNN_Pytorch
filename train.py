@@ -27,13 +27,23 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp_dir", type=str, default="./experiments/exp0")
     parser.add_argument("--resume", "-r", action="store_true")
-    parser.add_argument("--multigpu", type=str, default="yes")
+    parser.add_argument("--multigpu", type=str, default="false")
+    parser.add_argument("--device_ids", type=str, default="all")
     args = parser.parse_args()
     return args
     
 args = parse_args()
 
-assert args.multigpu in ("yes", "no"), f"your option for argument --multigpu ({args.multigpu}) is neither yes or no"
+if args.device_ids != "all":
+    ids = args.device_ids
+    ids: str
+    ids= ids.strip()
+    # should not throw error here, if throw it's user's responsibility
+    id_list = [int(x) for x in ids]
+else:
+    id_list = None
+
+assert args.multigpu in ("true", "false"), f"your option for argument --multigpu ({args.multigpu}) is neither yes or no"
 
 # work-arounds
 torch.backends.cudnn.enabled = False
@@ -90,8 +100,12 @@ net = net.to(device)
 
 if device.type.lower() != "cpu":
     print(f"device is not cpu, parallizing across existing GPUs:")
-    if args.multigpu == "yes":
-        net = torch.nn.DataParallel(net)
+    if args.multigpu == "true":
+        if id_list is not None:
+            net = torch.nn.DataParallel(net, device_ids=id_list)
+        else:
+            # default to use all devices
+            net = torch.nn.DataParallel(net)
         print(f"model's device ID: {net.device_ids}")
     else:
         print(f"not parallizing across multiple devices i.e. not calling nn.DataParallel()")

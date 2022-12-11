@@ -82,15 +82,20 @@ class Logger(object):
         
         numpy.moveaxis(a, source, destination)[source]
         """
-
+        # at this point, image_ndarr must have dim 4
+        print(f">>> image summary does with shape {image_ndarr.shape}")
         if image_ndarr.shape[1] in (1, 2, 3, 4):
-            # sec dim is channel, roll to the last dim
+            # sec dim is channel, roll to the last dim, default to be considered channel
             image_ndarr = np.moveaxis(image_ndarr, 1, -1)
         else:
-            raise ValueError(f"in image_summary, image_ndarr has dim {image_ndarr.shape} that has sec dimension "
-                             f"not its channel ")
+            if image_ndarr.shape[3] in (1, 2, 3, 4):
+                pass
+            else:
+                raise ValueError(f"in image_summary, image_ndarr has dim {image_ndarr.shape} that has neither "
+                                 f"sec or 4th dimension "
+                                 f"as its channel ")
 
-        print(f">>>>>>>>>>>>>>>>>> image_ndarr has shape {image_ndarr.shape}")
+        # print(f">>>>>>>>>>>>>>>>>> image_ndarr has shape {image_ndarr.shape}")
         with self.writer.as_default(step=step):
             tf.summary.image(tag, image_ndarr, step=step)
 

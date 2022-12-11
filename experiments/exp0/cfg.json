@@ -1,10 +1,10 @@
 {
   "device": "cuda:0",
-  "MAX_EPOCHES": 1,
+  "MAX_EPOCHES": 0,
 
   "dataset": {
     "dataset_name": "Tusimple",
-    "batch_size": 16,
+    "batch_size": 4,
     "resize_shape": [512, 288]
   },
 
