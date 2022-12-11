@@ -1,0 +1,3 @@
+# ignore event files
+*.v2
+*.pth
